@@ -1,16 +1,25 @@
 #include <GL/glew.h>
 #include <gtk/gtk.h>
 
+#define EDGE(x, y) x, y, 0.0f
+#define NR_OF_EDGES 7
+
 static struct {
     GLuint vbo = 0;
     GLuint vao = 0;
     GLuint shader_programme = 0;
 } viewport_state;
 
-float points[] = {
-        0.0f, 0.5f, 0.0f,
-        0.5f, -0.5f, 0.0f,
-        -0.5f, -0.5f, 0.0f};
+float points[NR_OF_EDGES*3] = {
+        // Middle
+        EDGE(0,0),
+        EDGE(0.5, 0.5),
+        EDGE(0.2, 0.0),
+        EDGE(0.5, -0.5),
+        EDGE(-0.5, -0.5),
+        EDGE(-0.5, 0.5),
+        EDGE(0.5, 0.5),
+};
 
 const char* vertex_shader =
         "#version 400\n"
@@ -23,7 +32,7 @@ const char* fragment_shader =
         "#version 400\n"
         "out vec4 frag_colour;"
         "void main() {"
-        "  frag_colour = vec4(0.5, 0.0, 0.5, 1.0);"
+        "  frag_colour = vec4(0.5, 0.5, 0.2, 0.5);"
         "}";
 
 static void start_simulation(gpointer user_data) {
@@ -102,17 +111,18 @@ static gboolean render_gl(GtkGLArea* area, GdkGLContext* context) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glBindBuffer(GL_ARRAY_BUFFER, viewport_state.vbo);
-    glBufferData(GL_ARRAY_BUFFER, 9 * sizeof(float), points, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_STATIC_DRAW);
 
     glBindVertexArray(viewport_state.vao);
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, viewport_state.vbo);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+    // Define the buffer layout (vec3, so 3 floats)
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
     glUseProgram(viewport_state.shader_programme);
     glBindVertexArray(viewport_state.vao);
     // draw points 0-3 from the currently bound VAO with current in-use shader
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, NR_OF_EDGES); // Was GL_TRIANGLES
 
     // we completed our drawing; the draw commands will be
     // flushed at the end of the signal emission chain, and
