@@ -1,3 +1,4 @@
+#include "shapefilereader.h"
 #include <GL/glew.h>
 #include <gtk/gtk.h>
 
@@ -168,6 +169,8 @@ static void on_activate(GtkApplication* app, gpointer user_data) {
     g_signal_connect(gl_area, "unrealize", G_CALLBACK(on_unrealize), NULL);
     g_signal_connect(gl_area, "resize", G_CALLBACK(resize), NULL);
     gtk_box_append(GTK_BOX(box), gl_area);
+
+    test_shape_reader();
 
     gtk_widget_show(window);
 }

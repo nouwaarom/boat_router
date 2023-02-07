@@ -1,0 +1,6 @@
+[submodule "dependencies/ShapefileCpp"]
+	path = dependencies/ShapefileCpp
+	url = git@github.com:jericks/ShapefileCpp.git
+[submodule "dependencies/shapelib"]
+	path = dependencies/shapelib
+	url = git@github.com:OSGeo/shapelib.git
