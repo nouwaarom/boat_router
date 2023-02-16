@@ -6,6 +6,23 @@
 #ifndef SHAPEFILEREADER_H
 #define SHAPEFILEREADER_H
 
-void test_shape_reader(void);
+#include <vector>
+#include <string>
+#include "coordinate.h"
+#include "chart.h"
+
+namespace router {
+    class ShapeFileReader {
+    public:
+        ShapeFileReader();
+
+        void load(std::string filename);
+
+        Chart* getChart();
+    protected:
+    private:
+        Chart* chart;
+    };
+}
 
 #endif //SHAPEFILEREADER_H
