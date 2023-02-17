@@ -35,7 +35,7 @@ void ShapeFileReader::load(std::string filename) {
             // Make sure we allocate enough memory
             std::vector<Coordinate> coordinates;
             coordinates.reserve(ring_points.size());
-            std::cout << "Ring with " << ring_points.size() << " ring_points" << std::endl;
+            //std::cout << "Ring with " << ring_points.size() << " ring_points" << std::endl;
             for (auto const& point : ring_points) {
                 Coordinate coord = Coordinate(point.getX(), point.getY());
                 coordinates.push_back(coord);

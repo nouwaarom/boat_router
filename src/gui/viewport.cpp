@@ -37,7 +37,58 @@ static const char* fragment_shader_source =
         "}";
 
 Viewport::Viewport() {
+    width = 0;
+    height = 0;
+    mouse_x = 0.0;
+    mouse_y = 0.0;
+    zoom_factor = 100;
+    horizontal_center = 0.0f;
+    vertical_center = 0.0f;
+}
 
+void Viewport::update_mouse_position(float x, float y) {
+    mouse_x = x;
+    mouse_y = y;
+}
+
+void Viewport::zoom_in() {
+    if (zoom_factor <= 5) {
+        return;
+    }
+    float zoom_amount = ((float)zoom_factor - 5.0f) / (float)zoom_factor;
+    zoom_factor -= 5;
+
+    // Update center based on mouse position.
+    float relative_x = mouse_x * 4.0f / (float)width - 1.0f; // From -1.0 to 1.0
+    float relative_y = -(mouse_y * 4.0f / (float)height) + 1.0f; // From -1.0 to 1.0
+    horizontal_center = horizontal_center + (horizontal_size * relative_x * (1.0f - zoom_amount));
+    vertical_center = vertical_center + (vertical_size * relative_y * (1.0f - zoom_amount));
+
+    recalculateProjectionMatrix();
+    scheduleRender();
+}
+
+void Viewport::zoom_out() {
+    if (zoom_factor >= 100) {
+        horizontal_center = 0.0f;
+        vertical_center = 0.0f;
+        return;
+    }
+    float zoom_amount = ((float)zoom_factor + 5.0f) / (float)zoom_factor;
+    zoom_factor += 5;
+
+    // Update center based on mouse position.
+    float relative_x = mouse_x * 4.0f / (float)width - 1.0f; // From -1.0 to 1.0
+    float relative_y = -(mouse_y * 4.0f / (float)height) + 1.0f; // From -1.0 to 1.0
+    horizontal_center = horizontal_center + (horizontal_size * relative_x * (1.0f - zoom_amount));
+    vertical_center = vertical_center + (vertical_size * relative_y * (1.0f - zoom_amount));
+
+    recalculateProjectionMatrix();
+    scheduleRender();
+}
+
+void Viewport::scheduleRender() {
+    gtk_widget_queue_draw(GTK_WIDGET(gl_area));
 }
 
 void Viewport::setChart(Chart* chart) {
@@ -60,6 +111,7 @@ gboolean Viewport::gtk_on_realize(GtkGLArea* area) {
     // We need to make the context current if we want to
     // call GL API
     gtk_gl_area_make_current(area);
+    this->gl_area = area;
 
     // start OpenGL extension handler
     gladLoadGL();
@@ -126,15 +178,25 @@ gboolean Viewport::gtk_on_unrealize(GtkGLArea* area) {
 void Viewport::gtk_on_resize(GtkGLArea* self, gint width, gint height) {
     gtk_gl_area_make_current(self);
 
-    g_print("GL Area has size (%d, %d)\n", width, height);
+    this->width = width;
+    this->height = height;
 
     // Setup the viewport
-    glViewport(0, 0, (GLsizei) width, (GLsizei) height);
+    //glViewport(0, 0, (GLsizei) width, (GLsizei) height);
+
+    // For a correct perspective the width should be twice the height.
+    if (width > 2 * height) { // Width is too large. Reduce height scale to compensate.
+        horizontal_aspect_scale = 1.0f;
+        vertical_aspect_scale = (2.0f * (float)height) / (float)width;
+    } else {
+        horizontal_aspect_scale = (float)width / (2.0f * (float)height);
+        vertical_aspect_scale = 1.0f;
+    }
 
     // We always project the whole map.
     // TODO change this matrix based on padding and scaling.
     // TODO, make sure perspective stays accurate.
-    orthoMatrix = glm::ortho(-180.0f, 180.0f, -90.0f, 90.0f);
+    recalculateProjectionMatrix();
 }
 
 gboolean Viewport::gtk_render(GtkGLArea* area, GdkGLContext* context) {
@@ -170,4 +232,10 @@ gboolean Viewport::gtk_render(GtkGLArea* area, GdkGLContext* context) {
     // flushed at the end of the signal emission chain, and
     // the buffers will be drawn on the window
     return TRUE;
+}
+
+void Viewport::recalculateProjectionMatrix() {
+    horizontal_size = 180.0f * ((float)zoom_factor / 100.0f) * horizontal_aspect_scale;
+    vertical_size = 90.0f * ((float)zoom_factor / 100.0f) * vertical_aspect_scale;
+    orthoMatrix = glm::ortho(horizontal_center - horizontal_size, horizontal_center + horizontal_size, vertical_center - vertical_size, vertical_center + vertical_size);
 }

@@ -22,8 +22,24 @@ namespace router {
         gboolean gtk_on_unrealize(GtkGLArea* area);
         void gtk_on_resize(GtkGLArea* self, gint width, gint height);
         gboolean gtk_render(GtkGLArea* area, GdkGLContext* context);
+        // Generic callbacks
+        void update_mouse_position(float x, float y);
+        void zoom_in();
+        void zoom_out();
+
+        void scheduleRender();
 
     private:
+        // Camera state
+        float horizontal_aspect_scale, vertical_aspect_scale;
+        unsigned int width, height;
+        float mouse_x, mouse_y;
+        float horizontal_center, vertical_center;
+        float horizontal_size, vertical_size;
+        int zoom_factor;
+
+        GtkGLArea* gl_area;
+
         std::vector<std::vector<glm::vec2>> chart_vertices;
         int chart_size;
 
@@ -32,6 +48,8 @@ namespace router {
         Shader vertexShader, fragmentShader;
         ShaderProgram mainProgram;
         VertexBufferObject shapesVBO;
+
+        void recalculateProjectionMatrix();
     };
 };
 
