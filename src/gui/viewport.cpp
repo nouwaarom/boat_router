@@ -39,9 +39,9 @@ static const char* fragment_shader_source =
 Viewport::Viewport() {
     width = 0;
     height = 0;
-    mouse_x = 0.0;
-    mouse_y = 0.0;
-    zoom_factor = 100;
+    mouse_x = 0.0f;
+    mouse_y = 0.0f;
+    zoom_factor = 1.0f;
     horizontal_center = 0.0f;
     vertical_center = 0.0f;
 }
@@ -52,39 +52,40 @@ void Viewport::update_mouse_position(float x, float y) {
 }
 
 void Viewport::zoom_in() {
-    if (zoom_factor <= 5) {
+    if (zoom_factor <= 0.005f) {
         return;
     }
-    float zoom_amount = ((float)zoom_factor - 5.0f) / (float)zoom_factor;
-    zoom_factor -= 5;
-
-    // Update center based on mouse position.
-    float relative_x = mouse_x * 4.0f / (float)width - 1.0f; // From -1.0 to 1.0
-    float relative_y = -(mouse_y * 4.0f / (float)height) + 1.0f; // From -1.0 to 1.0
-    horizontal_center = horizontal_center + (horizontal_size * relative_x * (1.0f - zoom_amount));
-    vertical_center = vertical_center + (vertical_size * relative_y * (1.0f - zoom_amount));
+    float change = 0.92f;
+    processZoom(change);
+    zoom_factor *= change;
 
     recalculateProjectionMatrix();
     scheduleRender();
 }
 
 void Viewport::zoom_out() {
-    if (zoom_factor >= 100) {
+    if (zoom_factor >= 0.99f) {
+        zoom_factor = 1.0f;
         horizontal_center = 0.0f;
         vertical_center = 0.0f;
-        return;
-    }
-    float zoom_amount = ((float)zoom_factor + 5.0f) / (float)zoom_factor;
-    zoom_factor += 5;
+     } else {
+        float change = 1.0f/0.92f;
+        // TODO, zooming out should have different logic and should always return to center.
+        processZoom(change);
+        zoom_factor *= change;
+     }
 
-    // Update center based on mouse position.
-    float relative_x = mouse_x * 4.0f / (float)width - 1.0f; // From -1.0 to 1.0
-    float relative_y = -(mouse_y * 4.0f / (float)height) + 1.0f; // From -1.0 to 1.0
-    horizontal_center = horizontal_center + (horizontal_size * relative_x * (1.0f - zoom_amount));
-    vertical_center = vertical_center + (vertical_size * relative_y * (1.0f - zoom_amount));
 
     recalculateProjectionMatrix();
     scheduleRender();
+}
+
+void Viewport::processZoom(float factor) {
+    // Update center based on mouse position.
+    float relative_x = mouse_x * 4.0f / (float)width - 1.0f; // From -1.0 to 1.0
+    float relative_y = -(mouse_y * 4.0f / (float)height) + 1.0f; // From -1.0 to 1.0
+    horizontal_center = horizontal_center + (horizontal_size * relative_x * (1.0f - factor));
+    vertical_center = vertical_center + (vertical_size * relative_y * (1.0f - factor));
 }
 
 void Viewport::scheduleRender() {
@@ -235,7 +236,7 @@ gboolean Viewport::gtk_render(GtkGLArea* area, GdkGLContext* context) {
 }
 
 void Viewport::recalculateProjectionMatrix() {
-    horizontal_size = 180.0f * ((float)zoom_factor / 100.0f) * horizontal_aspect_scale;
-    vertical_size = 90.0f * ((float)zoom_factor / 100.0f) * vertical_aspect_scale;
+    horizontal_size = 180.0f * zoom_factor * horizontal_aspect_scale;
+    vertical_size = 90.0f * zoom_factor * vertical_aspect_scale;
     orthoMatrix = glm::ortho(horizontal_center - horizontal_size, horizontal_center + horizontal_size, vertical_center - vertical_size, vertical_center + vertical_size);
 }

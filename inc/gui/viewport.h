@@ -36,7 +36,7 @@ namespace router {
         float mouse_x, mouse_y;
         float horizontal_center, vertical_center;
         float horizontal_size, vertical_size;
-        int zoom_factor;
+        float zoom_factor; // Between 0 and 1
 
         GtkGLArea* gl_area;
 
@@ -49,6 +49,7 @@ namespace router {
         ShaderProgram mainProgram;
         VertexBufferObject shapesVBO;
 
+        void processZoom(float factor);
         void recalculateProjectionMatrix();
     };
 };
