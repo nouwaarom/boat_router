@@ -5,17 +5,33 @@
 #ifndef WEATHER_ROUTER_INC_GUI_VIEWPORT_H
 #define WEATHER_ROUTER_INC_GUI_VIEWPORT_H
 
-#include <gtk/gtk.h>
+#include "chart.h"
 #include "shader.h"
 #include "shaderProgram.h"
+#include "staticMesh2D.h"
 #include "vertexBufferObject.h"
-#include "chart.h"
+#include <gtk/gtk.h>
 
 namespace router {
     class Viewport {
     public:
+        enum class Shape {
+            Boat,
+            Marker,
+        };
+        class Marker {
+        public:
+            Marker(Shape shape, Coordinate position, float rotation) : shape(shape), position(position), rotation(rotation) {}
+            Shape shape;
+            Coordinate position;
+            float rotation; // Between 0 and 360 degrees.
+        };
+
         Viewport();
         void setChart(Chart* chart);
+        // Add a marker for drawing. Marker will be copied and be shown until markers are cleared.
+        void addMarker(Marker marker);
+        void clearMarkers();
 
         // GTK callbacks
         gboolean gtk_on_realize(GtkGLArea* area);
@@ -40,14 +56,19 @@ namespace router {
 
         GtkGLArea* gl_area;
 
+        std::vector<Marker> markers;
         std::vector<std::vector<glm::vec2>> chart_vertices;
         int chart_size;
 
+        // This is the projection matrix in use, we use a orthogonal projection because we work purely in 2D
         glm::mat4 orthoMatrix;
-        GLuint mainVAO;
         Shader vertexShader, fragmentShader;
         ShaderProgram mainProgram;
-        VertexBufferObject shapesVBO;
+        GLuint chartVAO;
+        VertexBufferObject chartShapesVBO;
+
+        // Meshes
+        meshes::StaticMesh2D* boatMesh;
 
         void processZoom(float factor);
         void recalculateProjectionMatrix();

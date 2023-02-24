@@ -2,8 +2,10 @@
 // Created by eput on 2/15/23.
 //
 #include "viewport.h"
-#include <glm/gtc/matrix_transform.hpp>
+#include "boat.h"
 #include "glad/glad.h"
+#include "quad.h"
+#include <glm/gtc/matrix_transform.hpp>
 
 using namespace router;
 
@@ -44,6 +46,14 @@ Viewport::Viewport() {
     zoom_factor = 1.0f;
     horizontal_center = 0.0f;
     vertical_center = 0.0f;
+}
+
+void Viewport::addMarker(Marker marker) {
+    markers.push_back(marker);
+}
+
+void Viewport::clearMarkers() {
+    markers.clear();
 }
 
 void Viewport::update_mouse_position(float x, float y) {
@@ -148,18 +158,22 @@ gboolean Viewport::gtk_on_realize(GtkGLArea* area) {
         return FALSE;
     }
 
-    glGenVertexArrays(1, &mainVAO);
-    glBindVertexArray(mainVAO);
+    // Upload chart data to the GPU
+    glGenVertexArrays(1, &chartVAO);
+    glBindVertexArray(chartVAO);
 
-    shapesVBO.createVBO(chart_size);
-    shapesVBO.bindVBO();
+    chartShapesVBO.createVBO(chart_size);
+    chartShapesVBO.bindVBO();
     for (auto& ring_vertices: chart_vertices) {
-        shapesVBO.addRawData(ring_vertices.data(), ring_vertices.size()*sizeof(glm::vec2));
+        chartShapesVBO.addRawData(ring_vertices.data(), ring_vertices.size()*sizeof(glm::vec2));
     }
-    shapesVBO.uploadDataToGPU(GL_STATIC_DRAW);
+    chartShapesVBO.uploadDataToGPU(GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), nullptr);
+
+    // Upload marker data to the GPU
+    boatMesh = new meshes::Boat();
 
     return TRUE;
 }
@@ -169,9 +183,9 @@ gboolean Viewport::gtk_on_unrealize(GtkGLArea* area) {
     vertexShader.deleteShader();
     fragmentShader.deleteShader();
 
-    shapesVBO.deleteVBO();
+    chartShapesVBO.deleteVBO();
 
-    glDeleteVertexArrays(1, &mainVAO);
+    glDeleteVertexArrays(1, &chartVAO);
 
     return TRUE;
 }
@@ -194,9 +208,7 @@ void Viewport::gtk_on_resize(GtkGLArea* self, gint width, gint height) {
         vertical_aspect_scale = 1.0f;
     }
 
-    // We always project the whole map.
-    // TODO change this matrix based on padding and scaling.
-    // TODO, make sure perspective stays accurate.
+    // Update the projection to make sure the aspect stays correct.
     recalculateProjectionMatrix();
 }
 
@@ -207,18 +219,18 @@ gboolean Viewport::gtk_render(GtkGLArea* area, GdkGLContext* context) {
     // already been set to be the size of the allocation
     //gtk_gl_area_make_current(area);
 
-    glBindVertexArray(mainVAO);
+    glBindVertexArray(chartVAO);
 
     // we can start by clearing the buffer
     glClearColor(0.1, 0.2, 0.4, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    // Render the chart
     mainProgram.useProgram();
     mainProgram["matrices.projectionMatrix"] = orthoMatrix;
 
-    // Render the shape
     glm::mat4 model = glm::mat4(1.0);
-    model = glm::scale(model, glm::vec3(1.0, 1.0, 1));
+    model = glm::scale(model, glm::vec3(1.0, 1.0, 1.0));
     mainProgram["matrices.modelMatrix"] = model;
     mainProgram["color"] = glm::vec4(1.0, 1.0, 1.0, 1.0);
     int index = 0;
@@ -227,6 +239,18 @@ gboolean Viewport::gtk_render(GtkGLArea* area, GdkGLContext* context) {
         // Render part by part.
         glDrawArrays(GL_LINE_STRIP, index, size); // Was GL_TRIANGLE_FAN
         index += size;
+    }
+
+    // Render the markers
+    for (auto const& marker : markers) {
+        model = glm::mat4(1.0);
+        glm::vec3 translation = glm::vec3(marker.position.lon, marker.position.lat, 0.0) ;
+        model = glm::scale(model, glm::vec3(2.0 * sqrt(zoom_factor), 2.0 * sqrt(zoom_factor), 1.0));
+        model = glm::rotate(model, glm::radians(marker.rotation), glm::vec3(0,0,-1));
+        model = glm::translate(model, translation);
+        mainProgram["matrices.modelMatrix"] = model;
+        mainProgram["color"] = glm::vec4(0.8, 0.3, 0.3, 1.0);
+        boatMesh->render();
     }
 
     // we completed our drawing; the draw commands will be

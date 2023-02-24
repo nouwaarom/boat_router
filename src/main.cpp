@@ -5,6 +5,10 @@
 using namespace router;
 
 static void start_simulation(gpointer user_data) {
+    auto* viewport = static_cast<Viewport*>(user_data);
+    Viewport::Marker marker = Viewport::Marker(Viewport::Shape::Boat, Coordinate(0.0f, 0.0f), 45.0f);
+    viewport->addMarker(marker);
+    viewport->scheduleRender();
     g_print("Starting simulation!\n");
 }
 
@@ -54,6 +58,9 @@ static gboolean viewport_on_motion(GtkEventControllerMotion* self, gdouble x, gd
 }
 
 static void on_activate(GtkApplication* app, gpointer user_data) {
+    // Create viewport manager.
+    auto* viewport = new Viewport();
+
     // Create a new window
     GtkWidget* window = gtk_application_window_new(app);
     gtk_widget_set_can_focus(GTK_WIDGET(window), true);
@@ -79,7 +86,7 @@ static void on_activate(GtkApplication* app, gpointer user_data) {
     // Create another button
     GtkWidget* button2 = gtk_button_new_with_label("Start simulation!");
     // When the button is clicked, close the window passed as an argument
-    g_signal_connect_swapped(button2, "clicked", G_CALLBACK(start_simulation), nullptr);
+    g_signal_connect_swapped(button2, "clicked", G_CALLBACK(start_simulation), viewport);
     gtk_grid_attach(GTK_GRID(grid), button2, 1, 0, 1, 1);
 
     // Load the chart
@@ -87,7 +94,6 @@ static void on_activate(GtkApplication* app, gpointer user_data) {
     reader->load("data/ne_10m_ocean.shp");
 
     // Create the viewport and bind it to the gl area
-    auto* viewport = new Viewport();
     viewport->setChart(reader->getChart());
     GtkWidget* viewport_gl_area = gtk_gl_area_new();
     gtk_widget_grab_focus(GTK_WIDGET(viewport_gl_area));
