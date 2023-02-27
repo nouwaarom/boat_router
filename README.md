@@ -21,7 +21,7 @@ A weather router for sail boats.
   - [x] Implement zooming on the chart
   - [] Implement panning of the chart (someday maybe)
 - Plot boats
-  - [] Plot boat sprite at correct position and heading
+  - [x] Plot boat sprite at correct position and heading
 - Show wind
   - Load wind data
     - Get data from (http://www.tecepe.com.br/wiki/index.php?title=NOAAWinds)

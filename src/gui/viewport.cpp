@@ -244,10 +244,9 @@ gboolean Viewport::gtk_render(GtkGLArea* area, GdkGLContext* context) {
     // Render the markers
     for (auto const& marker : markers) {
         model = glm::mat4(1.0);
-        glm::vec3 translation = glm::vec3(marker.position.lon, marker.position.lat, 0.0) ;
-        model = glm::scale(model, glm::vec3(2.0 * sqrt(zoom_factor), 2.0 * sqrt(zoom_factor), 1.0));
+        model = glm::translate(model, glm::vec3(marker.position.lon, marker.position.lat, 0.0));
         model = glm::rotate(model, glm::radians(marker.rotation), glm::vec3(0,0,-1));
-        model = glm::translate(model, translation);
+        model = glm::scale(model, glm::vec3(2.0 * sqrt(zoom_factor), 2.0 * sqrt(zoom_factor), 1.0));
         mainProgram["matrices.modelMatrix"] = model;
         mainProgram["color"] = glm::vec4(0.8, 0.3, 0.3, 1.0);
         boatMesh->render();
