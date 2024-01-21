@@ -46,6 +46,7 @@ Viewport::Viewport() {
     zoom_factor = 1.0f;
     horizontal_center = 0.0f;
     vertical_center = 0.0f;
+    is_dragging = false;
 }
 
 void Viewport::addMarker(Marker marker) {
@@ -57,8 +58,27 @@ void Viewport::clearMarkers() {
 }
 
 void Viewport::update_mouse_position(float x, float y) {
+    if (is_dragging) {
+        float relative_x = 2.0 * (mouse_x - x) / (float)width;
+        float relative_y = -2.0 * (mouse_y - y) / (float)height;
+        horizontal_center = horizontal_center + (horizontal_size * relative_x);
+        vertical_center = vertical_center + (vertical_size * relative_y);
+        recalculateProjectionMatrix();
+        scheduleRender();
+    }
+
     mouse_x = x;
     mouse_y = y;
+}
+
+void Viewport::on_mouse_pressed(float x, float y) {
+    is_dragging = true;
+    mouse_x = x;
+    mouse_y = y;
+}
+
+void Viewport::on_mouse_released(float x, float y) {
+    is_dragging = false;
 }
 
 void Viewport::zoom_in() {
@@ -79,7 +99,7 @@ void Viewport::zoom_out() {
         horizontal_center = 0.0f;
         vertical_center = 0.0f;
      } else {
-        float change = 1.0f/0.92f;
+        float change = 1.0f / 0.92f;
         // TODO, zooming out should have different logic and should always return to center.
         processZoom(change);
         zoom_factor *= change;
@@ -92,8 +112,8 @@ void Viewport::zoom_out() {
 
 void Viewport::processZoom(float factor) {
     // Update center based on mouse position.
-    float relative_x = mouse_x * 4.0f / (float)width - 1.0f; // From -1.0 to 1.0
-    float relative_y = -(mouse_y * 4.0f / (float)height) + 1.0f; // From -1.0 to 1.0
+    float relative_x = mouse_x * 2.0f / (float)width - 1.0f; // From -1.0 to 1.0
+    float relative_y = -(mouse_y * 2.0f / (float)height) + 1.0f; // From -1.0 to 1.0
     horizontal_center = horizontal_center + (horizontal_size * relative_x * (1.0f - factor));
     vertical_center = vertical_center + (vertical_size * relative_y * (1.0f - factor));
 }
@@ -259,6 +279,8 @@ gboolean Viewport::gtk_render(GtkGLArea* area, GdkGLContext* context) {
 }
 
 void Viewport::recalculateProjectionMatrix() {
+    //g_print("Center: x=%4.2f, y=%4.2f\n", horizontal_center, vertical_center); 
+    //g_print("Size: x=%4.2f, y=%4.2f\n", horizontal_size, vertical_size);
     horizontal_size = 180.0f * zoom_factor * horizontal_aspect_scale;
     vertical_size = 90.0f * zoom_factor * vertical_aspect_scale;
     orthoMatrix = glm::ortho(horizontal_center - horizontal_size, horizontal_center + horizontal_size, vertical_center - vertical_size, vertical_center + vertical_size);

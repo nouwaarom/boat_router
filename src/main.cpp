@@ -51,6 +51,16 @@ static gboolean viewport_on_motion(GtkEventControllerMotion* self, gdouble x, gd
     return TRUE;
 }
 
+static void viewport_on_pressed(GtkGestureClick* gesture, int n_press, gdouble x, gdouble y, gpointer user_data) {
+    auto* viewport = static_cast<Viewport*>(user_data);
+    viewport->on_mouse_pressed((float)x, (float)y);
+}
+
+static void viewport_on_released(GtkGestureClick* gesture, int n_press, gdouble x, gdouble y, gpointer user_data) {
+    auto* viewport = static_cast<Viewport*>(user_data);
+    viewport->on_mouse_released((float)x, (float)y);
+}
+
 static void on_activate(GtkApplication* app, gpointer user_data) {
     // Create container
     auto* application = new Application();
@@ -90,20 +100,29 @@ static void on_activate(GtkApplication* app, gpointer user_data) {
     g_signal_connect(viewport_gl_area, "realize", G_CALLBACK(viewport_on_realize), application->viewport);
     g_signal_connect(viewport_gl_area, "unrealize", G_CALLBACK(viewport_on_unrealize), application->viewport);
     g_signal_connect(viewport_gl_area, "resize", G_CALLBACK(viewport_on_resize), application->viewport);
+
     // Setup event controllers for the viewport
     GtkEventController* key_event_controller = gtk_event_controller_key_new();
-    GtkEventController* scroll_event_controller = gtk_event_controller_scroll_new(GTK_EVENT_CONTROLLER_SCROLL_VERTICAL);
-    GtkEventController* motion_event_controller = gtk_event_controller_motion_new();
     g_signal_connect(key_event_controller, "key-pressed", G_CALLBACK(on_key_pressed), application->viewport);
-    g_signal_connect(scroll_event_controller, "scroll", G_CALLBACK(viewport_on_scroll), application->viewport);
-    g_signal_connect(motion_event_controller, "motion", G_CALLBACK(viewport_on_motion), application->viewport);
-    gtk_widget_add_controller(GTK_WIDGET(viewport_gl_area), scroll_event_controller);
-    gtk_widget_add_controller(GTK_WIDGET(viewport_gl_area), motion_event_controller);
-    // TODO, fix key events.
     gtk_widget_add_controller(GTK_WIDGET(window), key_event_controller);
+
+    GtkEventController* scroll_event_controller = gtk_event_controller_scroll_new(GTK_EVENT_CONTROLLER_SCROLL_VERTICAL);
+    g_signal_connect(scroll_event_controller, "scroll", G_CALLBACK(viewport_on_scroll), application->viewport);
+    gtk_widget_add_controller(GTK_WIDGET(viewport_gl_area), scroll_event_controller);
+
+    GtkEventController* motion_event_controller = gtk_event_controller_motion_new();
+    g_signal_connect(motion_event_controller, "motion", G_CALLBACK(viewport_on_motion), application->viewport);
+    gtk_widget_add_controller(GTK_WIDGET(viewport_gl_area), motion_event_controller);
+
+    // Setup listeners for mouseclicks.
+    GtkGesture* click_gesture = gtk_gesture_click_new();
+    g_signal_connect(click_gesture, "pressed", G_CALLBACK(viewport_on_pressed), application->viewport); 
+    g_signal_connect(click_gesture, "released", G_CALLBACK(viewport_on_released), application->viewport); 
+    gtk_widget_add_controller(GTK_WIDGET(viewport_gl_area), GTK_EVENT_CONTROLLER(click_gesture));
+
     gtk_box_append(GTK_BOX(box), viewport_gl_area);
 
-    gtk_widget_show(window);
+    gtk_widget_set_visible(window, true);
 }
 
 int main(int argc, char** argv) {
@@ -111,5 +130,6 @@ int main(int argc, char** argv) {
     GtkApplication* app = gtk_application_new("com.example.GtkApplication",
                                               G_APPLICATION_DEFAULT_FLAGS);
     g_signal_connect(app, "activate", G_CALLBACK(on_activate), NULL);
+
     return g_application_run(G_APPLICATION(app), argc, argv);
 }

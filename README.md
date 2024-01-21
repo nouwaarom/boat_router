@@ -22,6 +22,7 @@ A weather router for sail boats.
   - [] Implement panning of the chart (someday maybe)
 - Plot boats
   - [x] Plot boat sprite at correct position and heading
+  - [x] Implement setting the start and end position of the boat
 - Show wind
   - Load wind data
     - Get data from (http://www.tecepe.com.br/wiki/index.php?title=NOAAWinds)

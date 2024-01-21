@@ -40,6 +40,8 @@ namespace router {
         gboolean gtk_render(GtkGLArea* area, GdkGLContext* context);
         // Generic callbacks
         void update_mouse_position(float x, float y);
+        void on_mouse_pressed(float x, float y);
+        void on_mouse_released(float x, float y);
         void zoom_in();
         void zoom_out();
 
@@ -50,7 +52,11 @@ namespace router {
         float horizontal_aspect_scale, vertical_aspect_scale;
         unsigned int width, height;
         float mouse_x, mouse_y;
+        // Store the current center of the viewport.
         float horizontal_center, vertical_center;
+        // Store the current size of the vieport
+        // Viewport is from (center - size) to (center + size).
+        // So these are actually half sizes.
         float horizontal_size, vertical_size;
         float zoom_factor; // Between 0 and 1
 
@@ -69,6 +75,8 @@ namespace router {
 
         // Meshes
         meshes::StaticMesh2D* boatMesh;
+
+        bool is_dragging;
 
         void processZoom(float factor);
         void recalculateProjectionMatrix();
