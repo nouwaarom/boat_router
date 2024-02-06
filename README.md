@@ -8,6 +8,9 @@ A weather router for sail boats.
 - https://docs.gtk.org/gtk4/getting_started.html
 
 ## TODO
+- Commit map data with appropriate copyright notice and reference to
+  (natural earth data)[https://www.naturalearthdata.com/]
+
 - Be able to view charts
   - Plot a part of an image using opengl and glarea
     - [x] Create a glarea

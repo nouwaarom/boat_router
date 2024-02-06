@@ -13,7 +13,12 @@ namespace router {
     class Controls {
     public:
         Controls(Application* application);
+        // Legacy
         GtkWidget* getControlsBar();
+
+        GtkWidget* getControlsMenu();
+        // Set the current position of the controls menu.
+        void       setControlsMenuPosition(double x, double y);
     private:
         Application* application;
         GtkWidget *latN, *latS, *latDeg, *latMin, *latSec;
