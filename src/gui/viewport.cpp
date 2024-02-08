@@ -5,6 +5,7 @@
 #include "boat.h"
 #include "glad/glad.h"
 #include "quad.h"
+#include <iostream>
 #include <glm/gtc/matrix_transform.hpp>
 
 using namespace router;
@@ -49,12 +50,37 @@ Viewport::Viewport() {
     is_dragging = false;
 }
 
-void Viewport::addMarker(Marker marker) {
-    markers.push_back(marker);
+int Viewport::addMarker(Marker marker) {
+    int first_free_key = 0;
+    for (const auto& elem: m_markers) {
+        if (elem.first != first_free_key) {
+            break;
+        }
+        first_free_key++;
+    }
+    m_markers.insert({first_free_key, marker});
+    std::cout << "Marker " << first_free_key << " inserted." << std::endl;
+
+    return first_free_key;
 }
 
+void Viewport::removeMarker(int marker_handle) {
+    std::cout << "Marker " << marker_handle << " removed." << std::endl;
+    if (m_markers.contains(marker_handle)) {
+        m_markers.erase(marker_handle);
+    }}
+
 void Viewport::clearMarkers() {
-    markers.clear();
+    m_markers.clear();
+}
+
+Coordinate Viewport::getCoordinateForPosition(double x, double y) {
+    float relative_x = ((2.0 * x) - (float)width) / (float)width;
+    float relative_y = ((-2.0 * y) + (float)height) / (float)height;
+    double coordinate_x = horizontal_center + (horizontal_size * relative_x);
+    double coordinate_y = vertical_center + (vertical_size * relative_y);
+
+    return Coordinate {coordinate_y, coordinate_x};
 }
 
 void Viewport::update_mouse_position(float x, float y) {
@@ -262,7 +288,8 @@ gboolean Viewport::gtk_render(GtkGLArea* area, GdkGLContext* context) {
     }
 
     // Render the markers
-    for (auto const& marker : markers) {
+    for (auto const& marker_pair : m_markers) {
+        auto marker = marker_pair.second;
         model = glm::mat4(1.0);
         model = glm::translate(model, glm::vec3(marker.position.lon, marker.position.lat, 0.0));
         model = glm::rotate(model, glm::radians(marker.rotation), glm::vec3(0,0,-1));

@@ -4,6 +4,7 @@
 #include "viewport.h"
 #include <gtk/gtk.h>
 #include <iostream>
+#include <memory>
 
 using namespace router;
 
@@ -19,7 +20,8 @@ static gboolean viewport_on_unrealize(GtkGLArea* area, gpointer user_data) {
 
 static void viewport_on_resize(GtkGLArea* self, gint width, gint height, gpointer user_data) {
     auto* viewport = static_cast<Viewport*>(user_data);
-    viewport->gtk_on_resize(self, width, height);
+    // FIXME, this *2 is a hack for highdpi scaling.
+    viewport->gtk_on_resize(self, width/2, height/2);
 }
 
 static gboolean viwport_render(GtkGLArea* area, GdkGLContext* context, gpointer user_data) {
@@ -62,27 +64,12 @@ static void viewport_on_released(GtkGestureClick* gesture, int n_press, gdouble 
     viewport->on_mouse_released((float)x, (float)y);
 }
 
-static void viewport_on_right_pressed(GtkGestureClick* gesture, int n_press, gdouble x, gdouble y, gpointer user_data) {
-    std::cout << "Pressed RMB" << std::endl;
-    auto* popover = static_cast<GtkWidget*>(user_data);
-    GdkRectangle popover_position = GdkRectangle { (int)x, (int)y, 1, 1};
-    gtk_popover_set_pointing_to(GTK_POPOVER(popover), &popover_position);
-    // TODO, popdown on other actions.
-    gtk_popover_popup(GTK_POPOVER(popover));
-    // TODO, set position in the controls.
-}
-
-static void viewport_on_right_released(GtkGestureClick* gesture, int n_press, gdouble x, gdouble y, gpointer user_data) {
-    std::cout << "Released RMB" << std::endl;
-    //auto* popover = static_cast<GtkWidget*>(user_data);
-    //gtk_popover_popdown(GTK_POPOVER(popover));
-}
 
 static void on_activate(GtkApplication* app, gpointer user_data) {
     // Create container
-    auto* application = new Application();
+    auto* viewport = new Viewport();
+    auto* application = new Application(viewport);
     // Create viewport manager.
-    application->viewport = new Viewport();
     auto* controls = new Controls(application);
 
     // Create a new window
@@ -104,7 +91,7 @@ static void on_activate(GtkApplication* app, gpointer user_data) {
     reader->load("data/ne_10m_ocean.shp");
 
     // Create the viewport and bind it to the gl area
-    application->viewport->setChart(reader->getChart());
+    viewport->setChart(reader->getChart());
     GtkWidget* viewport_gl_area = gtk_gl_area_new();
     gtk_widget_grab_focus(GTK_WIDGET(viewport_gl_area));
     gtk_widget_set_focusable(GTK_WIDGET(viewport_gl_area), true);
@@ -113,43 +100,35 @@ static void on_activate(GtkApplication* app, gpointer user_data) {
     gtk_widget_set_vexpand(viewport_gl_area, true);
     gtk_widget_set_visible(viewport_gl_area, true);
     gtk_gl_area_set_auto_render(GTK_GL_AREA(viewport_gl_area), true);
-    g_signal_connect(viewport_gl_area, "render", G_CALLBACK(viwport_render), application->viewport);
-    g_signal_connect(viewport_gl_area, "realize", G_CALLBACK(viewport_on_realize), application->viewport);
-    g_signal_connect(viewport_gl_area, "unrealize", G_CALLBACK(viewport_on_unrealize), application->viewport);
-    g_signal_connect(viewport_gl_area, "resize", G_CALLBACK(viewport_on_resize), application->viewport);
+    g_signal_connect(viewport_gl_area, "render", G_CALLBACK(viwport_render), viewport);
+    g_signal_connect(viewport_gl_area, "realize", G_CALLBACK(viewport_on_realize), viewport);
+    g_signal_connect(viewport_gl_area, "unrealize", G_CALLBACK(viewport_on_unrealize), viewport);
+    g_signal_connect(viewport_gl_area, "resize", G_CALLBACK(viewport_on_resize), viewport);
 
     // Setup event controllers for the viewport
     GtkEventController* key_event_controller = gtk_event_controller_key_new();
-    g_signal_connect(key_event_controller, "key-pressed", G_CALLBACK(on_key_pressed), application->viewport);
+    g_signal_connect(key_event_controller, "key-pressed", G_CALLBACK(on_key_pressed), viewport);
     gtk_widget_add_controller(GTK_WIDGET(window), key_event_controller);
 
     GtkEventController* scroll_event_controller = gtk_event_controller_scroll_new(GTK_EVENT_CONTROLLER_SCROLL_VERTICAL);
-    g_signal_connect(scroll_event_controller, "scroll", G_CALLBACK(viewport_on_scroll), application->viewport);
+    g_signal_connect(scroll_event_controller, "scroll", G_CALLBACK(viewport_on_scroll), viewport);
     gtk_widget_add_controller(GTK_WIDGET(viewport_gl_area), scroll_event_controller);
 
     GtkEventController* motion_event_controller = gtk_event_controller_motion_new();
-    g_signal_connect(motion_event_controller, "motion", G_CALLBACK(viewport_on_motion), application->viewport);
+    g_signal_connect(motion_event_controller, "motion", G_CALLBACK(viewport_on_motion), viewport);
     gtk_widget_add_controller(GTK_WIDGET(viewport_gl_area), motion_event_controller);
 
     // Setup listener for left mouseclick.
     GtkGesture* left_click_gesture = gtk_gesture_click_new();
     gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(left_click_gesture), 1); // 1 = Left
-    g_signal_connect(left_click_gesture, "pressed", G_CALLBACK(viewport_on_pressed), application->viewport); 
-    g_signal_connect(left_click_gesture, "released", G_CALLBACK(viewport_on_released), application->viewport); 
+    g_signal_connect(left_click_gesture, "pressed", G_CALLBACK(viewport_on_pressed), viewport); 
+    g_signal_connect(left_click_gesture, "released", G_CALLBACK(viewport_on_released), viewport); 
     gtk_widget_add_controller(GTK_WIDGET(viewport_gl_area), GTK_EVENT_CONTROLLER(left_click_gesture));
 
     // Create popover (menu) for right mouseclicks on the viewport.
-    GtkWidget* popover = gtk_popover_new();
-    gtk_popover_set_child(GTK_POPOVER(popover), controls->getControlsMenu());
-    gtk_popover_set_autohide(GTK_POPOVER(popover), false);
-    gtk_widget_set_parent(popover, GTK_WIDGET(viewport_gl_area));
-
-    // Setup listener for right mousclick
-    GtkGesture* click_gesture = gtk_gesture_click_new();
-    gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(click_gesture), 3); // 3 = Right
-    g_signal_connect(click_gesture, "pressed", G_CALLBACK(viewport_on_right_pressed), popover); 
-    g_signal_connect(click_gesture, "released", G_CALLBACK(viewport_on_right_released), popover); 
-    gtk_widget_add_controller(GTK_WIDGET(viewport_gl_area), GTK_EVENT_CONTROLLER(click_gesture));
+    gtk_widget_set_parent(controls->getPopoverMenu(), GTK_WIDGET(viewport_gl_area));
+    // Setup listener for right mouseclick
+    gtk_widget_add_controller(GTK_WIDGET(viewport_gl_area), GTK_EVENT_CONTROLLER(controls->getRightClickGesture()));
 
     gtk_box_append(GTK_BOX(box), viewport_gl_area);
 

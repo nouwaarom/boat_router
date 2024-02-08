@@ -13,12 +13,18 @@ namespace router {
      */
     class Application {
     public:
-        Application();
+        Application(Viewport* viewport);
 
-        Viewport* viewport;
+        void setRouteStart(double mouse_x, double mouse_y);
         void setRouteStart(Coordinate coord);
+
+        void setRouteDestination(double mouse_x, double mouse_y);
         void setRouteDestination(Coordinate coord);
     private:
+        Viewport* m_viewport;
+        int       m_start_marker;
+        int       m_destination_marker;
+
         Coordinate routeStart;
         Coordinate routeDestination;
     };
