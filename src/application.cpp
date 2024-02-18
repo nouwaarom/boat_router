@@ -39,7 +39,7 @@ void Application::setRouteDestination(Coordinate coord) {
         m_viewport->removeMarker(m_destination_marker);
     }
 
-    Viewport::Marker marker = Viewport::Marker(Viewport::Shape::Boat, coord, 90.0f);
+    Viewport::Marker marker = Viewport::Marker(Viewport::Shape::Destination, coord, 00.0f);
     m_destination_marker = m_viewport->addMarker(marker);
     m_viewport->scheduleRender();
     g_print("Route destination set to (%4.2f, %4.2f)!\n", coord.lat, coord.lon);

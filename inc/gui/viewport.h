@@ -8,7 +8,7 @@
 #include "chart.h"
 #include "shader.h"
 #include "shaderProgram.h"
-#include "staticMesh2D.h"
+#include "meshes/staticMesh2D.h"
 #include "vertexBufferObject.h"
 #include <gtk/gtk.h>
 
@@ -18,6 +18,7 @@ class Viewport {
 public:
     enum class Shape {
         Boat,
+        Destination,
         Marker,
     };
     class Marker {
@@ -82,7 +83,7 @@ private:
     VertexBufferObject chartShapesVBO;
 
     // Meshes
-    meshes::StaticMesh2D* boatMesh;
+    std::map<Shape, meshes::StaticMesh2D*> m_shape_mesh_map;
 
     bool is_dragging;
 

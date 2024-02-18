@@ -2,30 +2,32 @@
 #include "glm/glm.hpp"
 
 // Project
-#include "meshes/boat.h"
+#include "meshes/destination.h"
 
 namespace meshes {
 
-glm::vec2 Boat::vertices[] =
+glm::vec2 Destination::vertices[] =
 {
-    glm::vec2(0.0f, 1.0f), // Top triangle
-    glm::vec2(0.3f, 0.2f),
-    glm::vec2(-0.3f, 0.2f),
-    glm::vec2(-0.3f, 0.2f), // Bottom left triangle
-    glm::vec2(0.3f, 0.2f),
-    glm::vec2(-0.2f, -1.0f),
-    glm::vec2(0.3f, 0.2f), // Bottom right triangle
-    glm::vec2(0.2f, -1.0f),
-    glm::vec2(-0.2f, -1.0f),
+    glm::vec2(0.0f, 0.0f), // Flag triangle
+    glm::vec2(2.0f, 0.5f),
+    glm::vec2(0.0f, 1.0f),
+
+    glm::vec2(0.0f,  0.0f), // Stick left triangle
+    glm::vec2(0.0f, -1.5f),
+    glm::vec2(0.2f, -1.5f),
+
+    glm::vec2(0.0f,  0.0f), // Stick right triangle
+    glm::vec2(0.2f,  0.0f),
+    glm::vec2(0.2f, -1.5f),
 };
 
-Boat::Boat()
+Destination::Destination()
     : StaticMesh2D(true, false)
 {
     initializeData();
 }
 
-void Boat::render() const
+void Destination::render() const
 {
     if (!_isInitialized) {
         return;
@@ -35,7 +37,7 @@ void Boat::render() const
     glDrawArrays(GL_TRIANGLES, 0, sizeof(vertices)/sizeof(glm::vec2));
 }
 
-void Boat::initializeData()
+void Destination::initializeData()
 {
     if (_isInitialized) {
         return;
@@ -54,4 +56,4 @@ void Boat::initializeData()
     _isInitialized = true;
 }
 
-} // namespace static_meshes_2D
+} // namespace meshes

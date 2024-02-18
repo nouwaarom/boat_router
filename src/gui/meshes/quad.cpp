@@ -2,7 +2,7 @@
 #include "glm/glm.hpp"
 
 // Project
-#include "gui/meshes/quad.h"
+#include "meshes/quad.h"
 
 namespace meshes {
 

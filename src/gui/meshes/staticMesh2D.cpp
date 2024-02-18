@@ -2,7 +2,7 @@
 #include "glm/glm.hpp"
 
 // Project
-#include "staticMesh2D.h"
+#include "meshes/staticMesh2D.h"
 
 namespace meshes {
 

@@ -2,9 +2,9 @@
 // Created by eput on 2/15/23.
 //
 #include "viewport.h"
-#include "boat.h"
+#include "meshes/boat.h"
+#include "meshes/destination.h"
 #include "glad/glad.h"
-#include "quad.h"
 #include <iostream>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -219,7 +219,8 @@ gboolean Viewport::gtk_on_realize(GtkGLArea* area) {
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), nullptr);
 
     // Upload marker data to the GPU
-    boatMesh = new meshes::Boat();
+    m_shape_mesh_map.insert({Shape::Boat, new meshes::Boat()});
+    m_shape_mesh_map.insert({Shape::Destination, new meshes::Destination()});
 
     return TRUE;
 }
@@ -296,7 +297,12 @@ gboolean Viewport::gtk_render(GtkGLArea* area, GdkGLContext* context) {
         model = glm::scale(model, glm::vec3(2.0 * sqrt(zoom_factor), 2.0 * sqrt(zoom_factor), 1.0));
         mainProgram["matrices.modelMatrix"] = model;
         mainProgram["color"] = glm::vec4(0.8, 0.3, 0.3, 1.0);
-        boatMesh->render();
+
+        if (m_shape_mesh_map.contains(marker.shape)) {
+            m_shape_mesh_map[marker.shape]->render();
+        } else {
+            g_printerr("No mesh for shape XXX found\n");
+        }
     }
 
     // we completed our drawing; the draw commands will be
