@@ -22,7 +22,9 @@ namespace router {
         void setRouteDestination(Coordinate coord);
     private:
         Viewport* m_viewport;
+        // Viewport handle for the start marker.
         int       m_start_marker;
+        // Viewport handle for the destination marker.
         int       m_destination_marker;
 
         Coordinate routeStart;

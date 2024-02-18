@@ -13,10 +13,11 @@ namespace router {
 
 class Controls {
 public:
-    Controls(Application* application);
+    Controls(Application* application, Viewport* viewport);
     // Legacy
     GtkWidget* getControlsBar();
 
+    GtkGesture* getLeftClickGesture();
     GtkGesture* getRightClickGesture();
     GtkWidget* getPopoverMenu();
 private:
@@ -27,7 +28,11 @@ private:
     static void set_destination(gpointer user_data);
     void setDestination();
 
-    // Set the current position of the controls menu.
+    static void on_left_mouse_button_pressed(GtkGestureClick* gesture, int n_press, gdouble x, gdouble y, gpointer user_data);
+    void onLeftMouseButtonPressed(double x, double y);
+    static void on_left_mouse_button_released(GtkGestureClick* gesture, int n_press, gdouble x, gdouble y, gpointer user_data);
+    void onLeftMouseButtonReleased(double x, double y);
+
     static void on_right_mouse_button_pressed(GtkGestureClick* gesture, int n_press, gdouble x, gdouble y, gpointer user_data);
     void onRightMouseButtonPressed(double x, double y);
     static void on_right_mouse_button_released(GtkGestureClick* gesture, int n_press, gdouble x, gdouble y, gpointer user_data);
@@ -35,7 +40,8 @@ private:
 
     Coordinate getCoordinate();
 
-    Application* application;
+    Application* m_application;
+    Viewport* m_viewport;
     GtkWidget *latN, *latS, *latDeg, *latMin, *latSec;
     GtkWidget *lonE, *lonW, *lonDeg, *lonMin, *lonSec;
     GtkWidget *m_popover;

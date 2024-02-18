@@ -20,8 +20,8 @@ static gboolean viewport_on_unrealize(GtkGLArea* area, gpointer user_data) {
 
 static void viewport_on_resize(GtkGLArea* self, gint width, gint height, gpointer user_data) {
     auto* viewport = static_cast<Viewport*>(user_data);
-    // FIXME, this *2 is a hack for highdpi scaling.
-    viewport->gtk_on_resize(self, width/2, height/2);
+    // FIXME, this /2 is a hack for highdpi scaling.
+    viewport->gtk_on_resize(self, width, height);
 }
 
 static gboolean viwport_render(GtkGLArea* area, GdkGLContext* context, gpointer user_data) {
@@ -70,7 +70,7 @@ static void on_activate(GtkApplication* app, gpointer user_data) {
     auto* viewport = new Viewport();
     auto* application = new Application(viewport);
     // Create viewport manager.
-    auto* controls = new Controls(application);
+    auto* controls = new Controls(application, viewport);
 
     // Create a new window
     GtkWidget* window = gtk_application_window_new(app);
@@ -119,11 +119,13 @@ static void on_activate(GtkApplication* app, gpointer user_data) {
     gtk_widget_add_controller(GTK_WIDGET(viewport_gl_area), motion_event_controller);
 
     // Setup listener for left mouseclick.
-    GtkGesture* left_click_gesture = gtk_gesture_click_new();
+    /*GtkGesture* left_click_gesture = gtk_gesture_click_new();
     gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(left_click_gesture), 1); // 1 = Left
     g_signal_connect(left_click_gesture, "pressed", G_CALLBACK(viewport_on_pressed), viewport); 
-    g_signal_connect(left_click_gesture, "released", G_CALLBACK(viewport_on_released), viewport); 
-    gtk_widget_add_controller(GTK_WIDGET(viewport_gl_area), GTK_EVENT_CONTROLLER(left_click_gesture));
+    g_signal_connect(left_click_gesture, "released", G_CALLBACK(viewport_on_released), viewport);*/
+
+    // Controls class handles right mousclicks.
+    gtk_widget_add_controller(GTK_WIDGET(viewport_gl_area), GTK_EVENT_CONTROLLER(controls->getLeftClickGesture()));
 
     // Create popover (menu) for right mouseclicks on the viewport.
     gtk_widget_set_parent(controls->getPopoverMenu(), GTK_WIDGET(viewport_gl_area));

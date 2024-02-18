@@ -5,8 +5,8 @@
 
 using namespace router;
 
-Controls::Controls(Application* application) : application(application) {
-
+Controls::Controls(Application* application, Viewport* viewport):
+    m_application(application), m_viewport(viewport) {
 }
 
 GtkWidget* Controls::getControlsBar() {
@@ -77,6 +77,15 @@ GtkWidget* Controls::getPopoverMenu() {
     return m_popover;
 }
 
+GtkGesture* Controls::getLeftClickGesture() {
+    GtkGesture* left_click_gesture = gtk_gesture_click_new();
+    gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(left_click_gesture), 1); // 1 = Left
+    g_signal_connect(left_click_gesture, "pressed", G_CALLBACK(on_left_mouse_button_pressed), this);
+    g_signal_connect(left_click_gesture, "released", G_CALLBACK(on_left_mouse_button_released), this);
+
+    return left_click_gesture;
+}
+
 GtkGesture* Controls::getRightClickGesture() {
     GtkGesture* click_gesture = gtk_gesture_click_new();
     gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(click_gesture), 3); // 3 = Right
@@ -112,7 +121,7 @@ Coordinate Controls::getCoordinate() {
 
 void Controls::setStart() {
     g_print("Setting start position\n");
-    application->setRouteStart(m_popover_x, m_popover_y);
+    m_application->setRouteStart(m_popover_x, m_popover_y);
 }
 
 void Controls::set_start(gpointer user_data) {
@@ -122,12 +131,32 @@ void Controls::set_start(gpointer user_data) {
 
 void Controls::setDestination() {
     g_print("Setting destination position\n");
-    application->setRouteDestination(m_popover_x, m_popover_y);
+    m_application->setRouteDestination(m_popover_x, m_popover_y);
 }
 
 void Controls::set_destination(gpointer user_data) {
     auto* controls = static_cast<Controls*>(user_data);
     controls->setDestination();
+}
+
+void Controls::on_left_mouse_button_pressed(GtkGestureClick* gesture, int n_press, gdouble x, gdouble y, gpointer user_data) {
+    auto* controls = static_cast<Controls*>(user_data);
+    controls->onLeftMouseButtonPressed(x, y);
+}
+
+void Controls::onLeftMouseButtonPressed(double x, double y) {
+    gtk_popover_popdown(GTK_POPOVER(m_popover));
+
+    m_viewport->on_mouse_pressed((float)x, (float)y);
+}
+
+void Controls::on_left_mouse_button_released(GtkGestureClick* gesture, int n_press, gdouble x, gdouble y, gpointer user_data) {
+    auto* controls = static_cast<Controls*>(user_data);
+    controls->onLeftMouseButtonReleased(x, y);
+}
+
+void Controls::onLeftMouseButtonReleased(double x, double y) {
+    m_viewport->on_mouse_released((float)x, (float)y);
 }
 
 void Controls::on_right_mouse_button_pressed(GtkGestureClick* gesture, int n_press, gdouble x, gdouble y, gpointer user_data) {
@@ -136,7 +165,6 @@ void Controls::on_right_mouse_button_pressed(GtkGestureClick* gesture, int n_pre
 }
 
 void Controls::onRightMouseButtonPressed(double x, double y) {
-    g_print("Pressed RMB\n");
     m_popover_x = x;
     m_popover_y = y;
     GdkRectangle popover_position = GdkRectangle { (int)x, (int)y, 1, 1};
@@ -152,5 +180,5 @@ void Controls::on_right_mouse_button_released(GtkGestureClick* gesture, int n_pr
 }
 
 void Controls::onRightMouseButtonReleased(double x, double y) {
-    g_print("Released RMB\n");
+    // Nothing to do.
 }
